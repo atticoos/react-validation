@@ -13,33 +13,76 @@ class App extends Component {
           <h1 className="App-title">Welcome to React</h1>
         </header>
 
-        <Form onSubmit={(...args) => console.log('onSubmit', ...args)}>
-          {({submit, valid}) => (
-            <React.Fragment>
-              <Form.Field
-                name="email"
-                validate={value => value.indexOf('@') > -1}
-                onChange={e => console.log('onChange', e)}
-              >
-                {({getLabelProps, getInputProps, valid}) => (
-                  <div>
-                    <label {...getLabelProps()}>Email</label>
-                    <input
-                      type="text"
-                      {...getInputProps()}
-                    />
-                    <br/>
-                    Valid: {`${valid}`}
-                  </div>
-                )}
-              </Form.Field>
 
-              <div>
-                <button onClick={submit} disabled={!valid}>Submit</button>
-              </div>
-            </React.Fragment>
-          )}
-        </Form>
+        <div style={{padding: 40}}>
+          <Form onSubmit={(...args) => console.log('onSubmit', ...args)}>
+            {({submit, valid, fields}) => (
+              <React.Fragment>
+                <Form.Field
+                  name="email"
+                  defaultValue="foo@bar.com"
+                  validate={value => !!value && value.indexOf('@') > -1}
+                  onChange={e => console.log('onChange', e)}
+                >
+                  {({getLabelProps, getInputProps, valid}) => (
+                    <div>
+                      <label {...getLabelProps()}>Email</label>
+                      <input
+                        type="text"
+                        {...getInputProps()}
+                      />
+                      <br/>
+                      Valid: {`${valid}`}
+                    </div>
+                  )}
+                </Form.Field>
+
+                <Form.Field
+                  name="password"
+                  validate={value => !!value && value.length > 8}
+                  onChange={e => console.log('password changed', e)}
+                >
+                  {({getLabelProps, getInputProps, valid}) => (
+                    <div>
+                      <label {...getLabelProps()}>Password</label>
+                      <input
+                        type="password"
+                        {...getInputProps()}
+                      />
+                      <br/>
+                      Valid: {`${valid}`}
+                    </div>
+                  )}
+                </Form.Field>
+
+                <Form.Field
+                  name="passwordConfirm"
+                  validate={(value, fields) => !fields.password || value === fields.password.value}
+                  onChange={e => console.log('password changed', e)}
+                >
+                  {({getLabelProps, getInputProps, valid}) => (
+                    <div>
+                      <label {...getLabelProps()}>Password</label>
+                      <input
+                        type="password"
+                        {...getInputProps()}
+                      />
+                      <br/>
+                      Valid: {`${valid}`}
+                    </div>
+                  )}
+                </Form.Field>
+
+                <div>
+                  <button onClick={submit} disabled={!valid}>Submit</button>
+                </div>
+                <pre>
+                  {JSON.stringify(fields, null, 2)}
+                </pre>
+              </React.Fragment>
+            )}
+          </Form>
+        </div>
       </div>
     );
   }
