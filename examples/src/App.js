@@ -21,10 +21,13 @@ class App extends Component {
                 <Form.Field
                   name="email"
                   defaultValue="foo@bar.com"
-                  validate={value => !!value && value.indexOf('@') > -1}
+                  validate={value => ({
+                    email: !!value && value.indexOf('@') > -1,
+                    minLength: !!value && value.length > 8
+                  })}
                   onChange={e => console.log('onChange', e)}
                 >
-                  {({getLabelProps, getInputProps, valid}) => (
+                  {({getLabelProps, getInputProps, valid, validations}) => (
                     <div>
                       <label {...getLabelProps()}>Email</label>
                       <input
@@ -33,6 +36,10 @@ class App extends Component {
                       />
                       <br/>
                       Valid: {`${valid}`}
+                      <br/>
+                      Length: {`${validations.minLength}`}
+                      <br/>
+                      Email: {`${validations.email}`}
                     </div>
                   )}
                 </Form.Field>

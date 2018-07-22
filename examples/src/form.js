@@ -46,18 +46,6 @@ export default class Form extends React.Component {
 
   updateField = (name, value, valid) => {
     this.forceUpdate()
-    // this.setState(prevState => ({
-    //   ...prevState,
-    //   pristine: false,
-    //   fields: {
-    //     ...prevState.fields,
-    //     [name]: {
-    //       ...prevState.fields.name,
-    //       value,
-    //       valid
-    //     }
-    //   }
-    // }))
   }
 
   allFieldsValid = fields => Object.keys(fields).reduce((valid, field) => valid && fields[field].getFieldState().valid, true)
@@ -65,15 +53,22 @@ export default class Form extends React.Component {
   allFieldsPristine = fields => Object.keys(fields).reduce((pristine, field) => pristine && fields[field].getFieldState().pristine, true)
 
   submit = () => {
-    console.log('submitted', this.state)
+    this.props.onSubmit(this.getForm())
+  }
+
+  getForm() {
+    return {
+      fields: dataFromFields(this.state.fields),
+      valid: this.allFieldsValid(this.state.fields),
+      pristine: this.allFieldsPristine(this.state.fields)
+    }
   }
 
   render() {
+    let form = this.getForm()
     console.log('form rendering with', {
       submit: this.submit,
-      valid: this.allFieldsValid(this.state.fields),
-      pristine: this.allFieldsPristine(this.state.fields),
-      fields: dataFromFields(this.state.fields)
+      ...form
     })
     return (
       <Provider
@@ -81,14 +76,12 @@ export default class Form extends React.Component {
           updateField: this.updateField,
           register: this.register,
           unregister: this.unregister,
-          fields: dataFromFields(this.state.fields)
+          fields: form.fields
         }}
       >
         {this.props.children({
           submit: this.submit,
-          valid: this.allFieldsValid(this.state.fields),
-          pristine: this.allFieldsPristine(this.state.fields),
-          fields: dataFromFields(this.state.fields)
+          ...form
         })}
       </Provider>
     )
@@ -110,7 +103,8 @@ const withForm = WrappedComponent => props => (
 
 export const Field = Form.Field = withForm(class FormField extends React.Component {
   state = {
-    valid: this.isValid(this.props.defaultValue || ''),
+    valid: this.areValidationsValid(this.validate(this.props.defaultValue || '')),
+    validations: this.validate(this.props.defaultValue || ''),
     pristine: true,
     inputId: `field_${Math.random()}`,
     value: this.props.defaultValue || ''
@@ -126,25 +120,29 @@ export const Field = Form.Field = withForm(class FormField extends React.Compone
 
   componentDidUpdate(prevProps, prevState) {
     if (this.props.form.fields !== prevProps.form.fields) {
-      let valid = this.isValid(this.state.value)
-      if (valid !== this.state.valid) {
-        this.validateAndUpdate(this.state.value)
+      let validations = this.validate(this.state.value)
+      let valid = this.areValidationsValid(validations)
+      let prevValidationValues = Object.values(this.state.validations)
+      let nextValidationValues = Object.values(validations)
+      let areEqual = prevValidationValues.filter((v, i) => v !== nextValidationValues[i]).length === 0
+      console.log('difference', {prevValidationValues, nextValidationValues, areEqual})
+
+      if (!areEqual) {
+        this.update(this.state.value, validations, valid)
       }
     }
   }
 
-  validateAndUpdate(value, cb) {
-    let valid = this.isValid(value)
+  update(value, validations, valid, cb = () => {}) {
     this.setState({
       value,
+      validations,
       valid,
       pristine: false
     }, () => {
       this.props.form.updateField()
-      if (cb) {
-        cb(valid)
-      }
-    })
+      cb(value, validations, valid)
+    });
   }
 
   getFieldState() {
@@ -162,13 +160,28 @@ export const Field = Form.Field = withForm(class FormField extends React.Compone
     return this.state.pristine
   }
 
-  isValid(value) {
-    return !this.props.validate || this.props.validate(value, this.props.form.fields)
+  validate(value) {
+    let validations = this.props.validate ? this.props.validate(value, this.props.form.fields) : true;
+
+    if (typeof validations === 'object') {
+      return validations
+    }
+    return {
+      default: validations
+    }
+  }
+
+  areValidationsValid(validations) {
+    return Object.keys(validations).reduce((valid, validation) => valid && !!validations[validation], true)
   }
 
   onChange = (e, parentOnChange) => {
     let value = e.target.value;
-    this.validateAndUpdate(value, valid => {
+
+    let validations = this.validate(value)
+    let valid = this.areValidationsValid(validations)
+
+    this.update(value, validations, valid, () => {
       if (valid && parentOnChange) {
         parentOnChange(value)
       }
@@ -187,6 +200,7 @@ export const Field = Form.Field = withForm(class FormField extends React.Compone
   render() {
     return this.props.children({
       valid: this.state.valid,
+      validations: this.state.validations,
       pristine: this.state.pristine,
       getInputProps: props => this.getInputProps(props),
       getLabelProps: props => ({
