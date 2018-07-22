@@ -5,68 +5,47 @@ function emailValidator (value) {
 class YourForm extends React.Component {
   passwordRef = React.createRef()
 
+  state = {
+    email: '',
+    password: '',
+    confirmPassword: ''
+  }
+
+  onSubmit = (e, data, valid) => {
+    console.log('onsubmit', {e, data, valid})
+  }
+
   render() {
     return (
-      <Form>
-
-        <FormField>
-          <label>Email</label>
-          <Validation validate={emailValidator}>
-            {({valid, pristine, getInputProps}) => (
-              <div>
-                <input
-                  type="text"
-                  {...getInputProps({
-                    onChange: e => console.log('email changed', e.target.value)
-                  })}
-                />
-                {!pristine && !valid && (
-                  <span>Invalid email address</span>
-                )}
-              </div>
-            )}
-          </Validation>
-        </FormField>
-
-        <FormField>
-          <label>Password</label>
-          <Validation validate={passwordValidator} ref={passwordRef}>
-            {({valid, pristine, getInputProps}) => (
-              <div>
-                <input
-                  type="password"
-                  {...getInputProps({
-                    onChange: e => console.log('password changed', e.target.value)
-                  })}
-                />
-                {!pristine && !valid && (
-                  <span>Invalid password</span>
-                )}
-              </div>
-            )}
-          </Validation>
-        </FormField>
+      <Form onSubmit={this.onSubmit}>
+        {({submit, valid, pristine, validations}) => (
+          <React.Fragment>
+            <Form.Field
+              name="email"
+              validate={value => value && value.length > 8}
+              defaultValue={this.state.email}
+              onChange={value => console.log('email field changed', value)}
+            >
+              {({getLabelProps, getInputProps, valid, validations: fieldValidations, pristine}) => (
+                <React.Fragment>
+                  <label {...getLabelProps()}>Email</label>
+                  <input
+                    type="email"
+                    {...getInputProps()}
+                  />
+                  {!pristine && !valid && (
+                    <span>Invalid email address</span>
+                  )}
+                </React.Fragment>
+              )}
+            </Form.Field>
 
 
-
-        <FormField>
-          <label>Confirm Password</label>
-          <Validation validate={value => isEqual(value, passwordRef.getValue())}>
-            {({valid, pristine, getInputProps}) => (
-              <div>
-                <input
-                  type="password"
-                  {...getInputProps({
-                    onChange: e => console.log('password changed', e.target.value)
-                  })}
-                />
-                {!pristine && !valid && (
-                  <span>Password does not match</span>
-                )}
-              </div>
-            )}
-          </Validation>
-        </FormField>
+            <div>
+              <button disabled={!valid} onClick={submit}>Submit</button>
+            </div>
+          </React.Fragment>
+        )}
       </Form>
     )
   }
